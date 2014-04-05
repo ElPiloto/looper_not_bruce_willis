@@ -10,8 +10,14 @@ Let's say we want to run a classification function (meinClassifier.m) with vario
     parameters.subjects = {'john' 'paul' 'ringo' 'george'};
 
     looped = loopify(parameters,'execute_fn','meinClassifier');
-
     
+    % this would effectively call:
+                 meinClassifier(1,'john');
+                 meinClassifier(10,'john');
+                 meinClassifier(100,'john');
+                 meinClassifier(1,'paul');
+				 etc...
+    % and store the results in looped.results
 
 
 
