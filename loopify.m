@@ -22,6 +22,7 @@ function [loops] = loopify( args, varargin)
 %      					     - if 'execute_fn' is empty this doesn't get used
 %      					     - values are specified in the call to 'execute_fn' BEFORE the other,
 %      					       "non-constant" parameters
+%       'pass_param_names' - boolean, should we pass in the names of arguments ala parsepropval.m
 %
 % Output
 %
@@ -100,7 +101,7 @@ parameters = fieldnames(args);
 % calculate total number of parameters
 num_params = numel(parameters);
 % grab the number of possible values for each parameter
-sizes = structfun(@numel,args);
+sizes = structfun(@numel,args)';
 total_num_combinations = prod(sizes);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,6 +109,7 @@ total_num_combinations = prod(sizes);
 defaults.range = 1 : total_num_combinations;
 defaults.execute_fn = '';
 defaults.constant_args = {};
+defaults.pass_param_names = false;
 options = parsepropval(defaults,varargin{:});
 
 
@@ -136,6 +138,16 @@ if ~isempty(options.execute_fn)
 	for result_idx = 1 : numel(loops.indices)
 		% this gets the correct parameters for the current index
 		current_iteration_params = arrayfun( @(param_idx) extract_value_from_subscript(getfield(args, parameters{param_idx}),loops.subscripts{param_idx}{result_idx} ) , 1:num_params, 'UniformOutput',false);
+
+		% here we add in the parameter names if specified by user
+		if options.pass_param_names
+			size_new_params = numel(current_iteration_params)*2;
+            new_params = cell(size_new_params,1);
+            
+			new_params(1:2:size_new_params) = parameters;
+			new_params(2:2:size_new_params) = current_iteration_params;
+			current_iteration_params = new_params; clear new_params;
+		end
 
 		% here we accomodate the possibility of passing in constant arguments
 		if ~isempty(options.constant_args)
