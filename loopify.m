@@ -42,6 +42,9 @@ function [loops] = loopify( args, varargin)
 %        'results' - {numel(indices) x nargout('execute_fn')} cell array, entry {i,j} contains the
 %        			 jth output argument from calling 'execute_fn' for the ith combination of args
 %
+%        'args'    - original arguments passed into loopify, useful in case you ever need to reconstruct
+%                    the arguments you used to generate loops.results
+%
 % Example 1 - create argument combinations
 %
 % args.first = {'A' 'B' 'C'};
@@ -54,6 +57,7 @@ function [loops] = loopify( args, varargin)
 %        indices: [1 2 3 4 5 6]     % unique argument combinations
 %        subscripts: {2x1 cell}     
 %        results: {}                % empty because no 'execute_fn'
+%        args: [1x1 struct]
 %
 %  loops.subscripts{:}              % each row corresponds to an argument index
 %        ans = [1] [2] [3] [1] [2] [3]
@@ -65,6 +69,7 @@ function [loops] = loopify( args, varargin)
 %        indices: [ 2 3 4]          % unique argument combinations
 %        subscripts: {2x1 cell}     
 %        results: {}                % empty because no 'execute_fn'
+%        args: [1x1 struct]
 %
 %  loops.subscripts{:}              
 %        ans = [2] [3] [1]
@@ -82,6 +87,7 @@ function [loops] = loopify( args, varargin)
 %        indices: [1 2 3 4 5 6]     % unique argument combinations
 %        subscripts: {2x1 cell}     
 %        results: {6x1 cell}
+%        args: [1x1 struct]
 %
 %      loops.results =              % each row contains result
 %         [0]     % this is the result of calling minus(1,1)
@@ -105,12 +111,14 @@ sizes = structfun(@numel,args)';
 total_num_combinations = prod(sizes);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% handle arguments
+% handle arguments and save the arguments in our result structure so that
+% we can reconstruct the parameters using subscripts
 defaults.range = 1 : total_num_combinations;
 defaults.execute_fn = '';
 defaults.constant_args = {};
 defaults.pass_param_names = false;
 options = parsepropval(defaults,varargin{:});
+loops.args = options;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
