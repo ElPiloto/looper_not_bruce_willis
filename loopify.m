@@ -101,6 +101,20 @@ function [loops] = loopify( args, varargin)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% check which way of calling loopify we're using
+LOAD_FROM_FILE_STRING = 'load,'; % indicates the string that we look for to determine whether we should load args from a file
+should_load_args_from_file = isstr(args) && ~isempty(strfind(args,LOAD_FROM_FILE_STRING));
+if should_load_args_from_file
+	start_idx = strfind(args,LOAD_FROM_FILE_STRING) + length(LOAD_FROM_FILE_STRING);
+	end_idx = strfind(args,'.mat') - 1;
+	args_file = args(start_idx : end_idx);
+	try
+		load(args_file);
+	catch err
+		error('looper_not_bruce_willis:coil:loadingArgsFromFileError', ['Tried to load arguments from file: ' args_file ', but failed.']);
+	end
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % some setup
 parameters = fieldnames(args);
@@ -117,8 +131,12 @@ defaults.range = 1 : total_num_combinations;
 defaults.execute_fn = '';
 defaults.constant_args = {};
 defaults.pass_param_names = false;
+defaults.save_name = '';
+defaults.save_directory = './';
+defaults.should_exit_when_done = false;
 options = parsepropval(defaults,varargin{:});
-loops.args = options;
+loops.args = args;
+loops.loopify_options = options;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,8 +183,26 @@ if ~isempty(options.execute_fn)
 		% finally store results
 		[loops.results{result_idx,:}] = fn_handy(current_iteration_params{:});
 	end
+
+	if ~isempty(options.save_name)
+		save_full_path = fullfile(options.save_directory,options.save_name);
+		try
+			save(save_full_path,'loops','-v7.3');
+		catch err
+			disp(['Error in loopify.m attempting to save results of executing function: ' options.execute_fn ' to file: ' save_full_path '. Leaving MATLAB in keyboard mode to allow debugging so you can save your results manually and not lose results.']);
+		end
+	end
 else
 	loops.results = {};
+end
+
+% finally, let's delete the arguments file if we loaded it from a file,
+if should_load_args_from_file
+    delete(args_file);
+end
+
+if options.should_exit_when_done
+	exit;
 end
 
 end
